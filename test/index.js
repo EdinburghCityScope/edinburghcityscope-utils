@@ -4,7 +4,7 @@ var assert = require('chai').assert;
 
 var edinburghcityscopeUtils = require('../index');
 var featureCollectionToFeatureArray = edinburghcityscopeUtils.featureCollectionToFeatureArray;
-var featureArrayToLoopbackArray = edinburghcityscopeUtils.featureArrayToLoopbackArray;
+var featureArrayToLoopbackJson = edinburghcityscopeUtils.featureArrayToLoopbackJson;
 
 var testFeatureCollection='{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection='{"type": "FeatureCollection","features": []}';
@@ -33,15 +33,15 @@ describe('#featureCollectionToFeatureArray', function(){
 
 });
 
-describe('#featureArrayToLoopbackArray',function(){
+describe('#featureArrayToLoopbackJson',function(){
 
-  it('convertsEmptyFeatureArrayToEmptyLoopBackModelArray',function(){
-    featureArrayToLoopbackArray(emptyArray).models.GeoJSONFeature.should.have.length(0);
+  it('convertsEmptyFeatureArrayToEmptyLoopBackJson',function(){
+    featureArrayToLoopbackJson(emptyArray).models.GeoJSONFeature.should.have.length(0);
   });
 
-  it ('convertsFeatureArrayToLoopbackModelArray',function(){
-    featureArrayToLoopbackArray(expectedFeatureArray).models.GeoJSONFeature.should.have.length(1);
-    featureArrayToLoopbackArray(expectedFeatureArray).models.GeoJSONFeature[0].properties.name.should.equal('Test Name');
+  it ('convertsFeatureArrayToLoopbackJson',function(){
+    featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature.should.have.length(1);
+    featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature[0].properties.name.should.equal('Test Name');
   });
 
 });

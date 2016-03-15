@@ -34,7 +34,7 @@ module.exports = {
 * @param {array} featureArray
 *
 */
- featureArrayToLoopbackArray(featureArray)
+ featureArrayToLoopbackJson(featureArray)
  {
    var jsonEmpty='{"ids": {"User": 1,"AccessToken": 1,"ACL": 1,"RoleMapping": 1,"Role": 1,"GeoJSONFeature": 2},"models": {"User": {},"AccessToken": {},"ACL": {},"RoleMapping": {},"Role": {},"GeoJSONFeature": {}}}';
    var loopbackJson = JSON.parse(jsonEmpty);

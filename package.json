@@ -1,6 +1,6 @@
 {
   "name": "edinburghcityscope-utils",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Node utility package for Edinburgh City Scope",
   "main": "index.js",
   "scripts": {
