@@ -1,0 +1,23 @@
+{
+  "name": "edinburghcityscope-utils",
+  "version": "0.1.0",
+  "description": "Node utility package for Edinburgh City Scope",
+  "main": "index.js",
+  "scripts": {
+    "test": "./node_modules/.bin/mocha --reporter spec"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EdinburghCityScope/edinburghcityscope-utils.git"
+  },
+  "author": "Richard Omand-Good <richard.good@ed.ac.uk>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EdinburghCityScope/edinburghcityscope-utils/issues"
+  },
+  "homepage": "https://github.com/EdinburghCityScope/edinburghcityscope-utils#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^2.4.5"
+  }
+}
