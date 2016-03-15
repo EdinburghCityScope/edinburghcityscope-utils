@@ -26,6 +26,24 @@ module.exports = {
     }
 
     return features;
+ },
+
+/**
+* Convert a GeoJSON Feature Array into an Loopback json object
+*
+* @param {array} featureArray
+*
+*/
+ featureArrayToLoopbackArray(featureArray)
+ {
+   var jsonEmpty='{"ids": {"User": 1,"AccessToken": 1,"ACL": 1,"RoleMapping": 1,"Role": 1,"GeoJSONFeature": 2},"models": {"User": {},"AccessToken": {},"ACL": {},"RoleMapping": {},"Role": {},"GeoJSONFeature": {}}}';
+   var loopbackJson = JSON.parse(jsonEmpty);
+   for (var i=0;i<featureArray.length;i++)
+   {
+     featureArray[i].id=i;
+   }
+   loopbackJson.models.GeoJSONFeature=featureArray;
+   return loopbackJson;
  }
 
 };
