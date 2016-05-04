@@ -77,19 +77,23 @@ getLoopbackModelFromMediaType(mediaType)
 
    var checkUrl = urllib.parse(url);
 
-
-   return http.get(url, function(response) {
+   http.get(url, function(response) {
+     if (response.statusCode=='404')
+     {
+       throw new Error('Data not found');
+     }
        // Continuously update stream with data
        var body = '';
        response.on('data', function(d) {
            body += d;
        });
        response.on('end', function() {
+             // Callback body now data is finished reception
+             callback(body);
 
-           // Data reception is done, do whatever with it!
-           callback(body);
        });
    }).on('error',function(e){
+     console.log(' on error here');
      throw e;
    });
  },
