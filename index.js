@@ -1,5 +1,26 @@
+var http = require('https')
+var urllib = require('url')
+var Converter = require("csvtojson").Converter;
+
+
 module.exports = {
 
+/**
+*  Gets an associated Loopback model from a mediaType
+* @param {mediaType} Media type to check
+* @return Model name as String
+*
+*/
+getLoopbackModelFromMediaType(mediaType)
+{
+  if (mediaType=='application/vnd.geo+json')
+  {
+    return 'GeoJSONFeature';
+  }
+  else {
+    throw new Error('Model not found for media type');
+  }
+},
  /**
  * Convert a GeoJSON FeatureCollection into an array of Features
  *
@@ -44,6 +65,89 @@ module.exports = {
    }
    loopbackJson.models.GeoJSONFeature=featureArray;
    return loopbackJson;
- }
+ },
+
+/**
+* Get data from a url
+* @param {url} The URL to get the data from
+* @param {callback} The callback which contains the Data
+*/
+ getDataFromURL(url,callback)
+ {
+
+   var checkUrl = urllib.parse(url);
+
+
+   return http.get(url, function(response) {
+       // Continuously update stream with data
+       var body = '';
+       response.on('data', function(d) {
+           body += d;
+       });
+       response.on('end', function() {
+
+           // Data reception is done, do whatever with it!
+           callback(body);
+       });
+   }).on('error',function(e){
+     throw e;
+   });
+ },
+
+ /**
+ * @param {dcatData} The data packed containing the DCAT information
+ * @param {callback} The callback containing the model and dataset url
+ *
+ */
+ getModelUrlFromDcatInfo(dcatData,callback)
+ {
+   var edinburghcityscopeUtils = require('./index');
+   var getLoopbackModelFromMediaType = edinburghcityscopeUtils.getLoopbackModelFromMediaType;
+   var modelAndUrl= JSON.parse('{"model": "","datasetUrl": ""}');
+   var dcatJson = JSON.parse(dcatData);
+   try{
+
+     for (var i=0;i<dcatJson.distribution.length;i++)
+     {
+       try {
+         modelAndUrl.model=getLoopbackModelFromMediaType(dcatJson.distribution[i].mediaType);
+         modelAndUrl.datasetUrl=dcatJson.distribution[i].downloadURL;
+         //Immediately break iteration if valid model/url is found
+         break;
+       } catch (e) {
+         // Do nothing as it's likely just a mediaType that Loopback can't handle
+       }
+
+     }
+
+   }
+   catch(err)
+   {
+     throw new Error('Invalid DCAT JSON');
+   }
+   callback(modelAndUrl);
+ },
+
+/**
+* convert CSV data to JSON array
+* @param csvData
+* @param callback containing the JSON array
+*/
+ convertCsvDataToJson(csvData, callback)
+ {
+
+   var converter = new Converter({});
+   converter.fromString(csvData, function(err,result){
+     if (err)
+     {
+       throw err;
+     }
+     else {
+       return (callback(result));
+     }
+
+   });
+
+ },
 
 };
