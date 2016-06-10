@@ -1,4 +1,5 @@
-var http = require('https')
+var https = require('https')
+var http = require('http')
 var urllib = require('url')
 var Converter = require("csvtojson").Converter;
 
@@ -77,7 +78,7 @@ getLoopbackModelFromMediaType(mediaType)
 
    var checkUrl = urllib.parse(url);
 
-   http.get(url, function(response) {
+   https.get(url, function(response) {
      if (response.statusCode=='404')
      {
        throw new Error('Data not found');
@@ -153,5 +154,61 @@ getLoopbackModelFromMediaType(mediaType)
    });
 
  },
+
+ /**
+  * Converts a CKAN API response to a JSON array for CityScope importing
+  * @param cKanApiResponse the response from the CKAN API callback
+  * @return the converted JSON result array object
+ **/
+ convertCkanAPIResultsToCityScopeJson(cKanApiResponse)
+ {
+   try {
+     cKanApiResponseJson = JSON.parse(cKanApiResponse);
+   } catch (e) {
+     throw new Error('Invalid JSON data');
+   }
+
+   try {
+     if (!cKanApiResponseJson.success)
+     {
+       throw new Error('Query failed: '+cKanApiResponseJson.error);
+     }
+     else if (cKanApiResponseJson.result.total=='0'){
+       throw new Error('API call returned zero records');
+     }
+     else {
+       return cKanApiResponseJson.result.records;
+     }
+   } catch (e) {
+     throw e;
+   }
+
+ },
+
+ /**
+ * Gets the result fields from an API response for future parsing
+ * @param cKanApiResponse the response from the CKAN API callback
+ * @return the fields as a JSON array object
+ */
+ getCkanApiResponseFields(cKanApiResponse)
+ {
+   try {
+     cKanApiResponseJson = JSON.parse(cKanApiResponse);
+   } catch (e) {
+     throw new Error('Invalid JSON data');
+   }
+
+   try {
+     if (!cKanApiResponseJson.success)
+     {
+       throw new Error('Query failed: '+cKanApiResponseJson.error);
+     }
+     else {
+       return cKanApiResponseJson.result.fields;
+     }
+   } catch (e) {
+     throw e;
+   }
+ }
 
 };
