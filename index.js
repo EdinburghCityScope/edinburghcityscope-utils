@@ -266,4 +266,43 @@ getLoopbackModelFromMediaType(mediaType)
    return parsedCkanFields;
  },
 
+ /**
+ * Parses CKan API result into more generic field names
+ * @param cKanApiResponseFields
+ * @return the parsed field array
+ */
+ parseCkanApiResult(cKanApiResult)
+ {
+   parsedCkanResult = [];
+   cKanApiResult.forEach(function(obj){
+     newObj = {};
+     for(var key in obj){
+              var attrName = key;
+              if (attrName=="Longitude")
+              {
+                attrName="longitude";
+              }
+              else if (attrName=="Latitude")
+              {
+                attrName="latitude";
+              }
+              else if (attrName=="BankTypeNa")
+              {
+                attrName="type";
+              }
+              else if (attrName=="Site_Name")
+              {
+                attrName="name";
+              }
+
+              var attrValue = obj[key];
+
+              newObj[attrName]=attrValue;
+          }
+          parsedCkanResult.push(newObj)
+   });
+
+   return parsedCkanResult;
+ }
+
 };

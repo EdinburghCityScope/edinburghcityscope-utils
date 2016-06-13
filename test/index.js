@@ -12,6 +12,7 @@ var getLoopbackModelFromMediaType = edinburghcityscopeUtils.getLoopbackModelFrom
 var convertCkanAPIResultsToCityScopeJson = edinburghcityscopeUtils.convertCkanAPIResultsToCityScopeJson;
 var getCkanApiResponseFields = edinburghcityscopeUtils.getCkanApiResponseFields;
 var parseCkanApiResponseFields = edinburghcityscopeUtils.parseCkanApiResponseFields;
+var parseCkanApiResult = edinburghcityscopeUtils.parseCkanApiResult;
 
 var testFeatureCollection='{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection='{"type": "FeatureCollection","features": []}';
@@ -27,7 +28,7 @@ var testDcatData= '{"id": "test","title": "test dcat","description": "A test dca
 var cKanAPIBadResult = '{ "success" : false, "error" : "error text"}';
 var cKanAPIZeroResults = '{ "success" : true, "result" : { "total" : 0 }}';
 var cKanAPIResult = '{ "success" : true, "result" : { "fields" : [{ "type" : "text", "id" : "test" }],"total" : 1, "records" : [ { "test" : "value"}] }}';
-var cKanConvertedResult = [JSON.parse('{ "test" : "value"}')];
+var cKanConvertedResult = [JSON.parse('{ "test" : "value", "Latitude" : "0", "Longitude" : "0", "BankTypeNa" : "site" , "Site_Name" : "name"}')];
 var cKanFields = JSON.parse('[{ "type" : "text", "id" : "test" },{"type" : "text", "id" : "Latitude"},{"type" : "text", "id" : "Longitude"},{"type" : "text", "id" : "BankTypeNa"},{"type" : "text", "id" : "Site_Name"}]');
 
 describe('#featureCollectionToFeatureArray', function(){
@@ -187,6 +188,18 @@ describe('#parseCkanApiResponseFields',function(){
     result[3].id.should.equal("type");
     result[4].id.should.equal("name");
 
+  });
+
+});
+
+describe('#parseCkanApiResult',function(){
+
+  it ('parses fields correctly',function(){
+    result = parseCkanApiResult(cKanConvertedResult);
+    result[0].latitude.should.equal("0");
+    result[0].longitude.should.equal("0");
+    result[0].type.should.equal("site");
+    result[0].name.should.equal("name");
   });
 
 });
