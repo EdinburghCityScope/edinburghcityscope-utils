@@ -1,7 +1,7 @@
 var https = require('https')
 var http = require('http')
 var urllib = require('url')
-var Converter = require("csvtojson").Converter;
+var csv2geojson = require("csv2geojson");
 
 
 module.exports = {
@@ -161,22 +161,20 @@ getLoopbackModelFromMediaType(mediaType)
 /**
 * convert CSV data to JSON array
 * @param csvData
-* @param callback containing the JSON array
+* @return GeoJSON array
 */
- convertCsvDataToJson(csvData, callback)
+ convertCsvDataToGeoJson(csvData,callback)
  {
 
-   var converter = new Converter({});
-   converter.fromString(csvData, function(err,result){
-     if (err)
-     {
-       throw err;
-     }
-     else {
-       return (callback(result));
-     }
+   csv2geojson.csv2geojson(csvData,{  latfield: 'latitude',
+     lonfield: 'longitude',
+     delimiter: ',' }, function(err, data) {
+       if (err){
+         throw err;
+       }
 
-   });
+       callback(data);
+     });
 
  },
 

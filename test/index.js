@@ -6,7 +6,7 @@ var edinburghcityscopeUtils = require('../index');
 var featureCollectionToFeatureArray = edinburghcityscopeUtils.featureCollectionToFeatureArray;
 var featureArrayToLoopbackJson = edinburghcityscopeUtils.featureArrayToLoopbackJson;
 var getDataFromURL = edinburghcityscopeUtils.getDataFromURL;
-var convertCsvDataToJson = edinburghcityscopeUtils.convertCsvDataToJson;
+var convertCsvDataToGeoJson = edinburghcityscopeUtils.convertCsvDataToGeoJson;
 var getModelUrlFromDcatInfo = edinburghcityscopeUtils.getModelUrlFromDcatInfo;
 var getLoopbackModelFromMediaType = edinburghcityscopeUtils.getLoopbackModelFromMediaType;
 var convertCkanAPIResultsToCityScopeJson = edinburghcityscopeUtils.convertCkanAPIResultsToCityScopeJson;
@@ -83,10 +83,10 @@ describe('#getDataFromURL',function(){
   });
 });
 
-describe('#convertCsvDataToJson',function(){
-  it('converts csv data to json',function(done){
-    convertCsvDataToJson(testCsv,function(callback){
-      expect(callback[0].name).to.equal('Psychology Building');
+describe('#convertCsvDataToGeoJson',function(){
+  it('converts csv data to GeoJson',function(done){
+    result = convertCsvDataToGeoJson(testCsv,function(callback){
+      expect(callback.features[0].properties.name).to.equal('Psychology Building');
       done();
     });
 

@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/EdinburghCityScope/edinburghcityscope-utils#readme",
   "dependencies": {
-    "csvtojson": "0.5.4"
+    "csv2geojson": "^5.0.0"
   },
   "devDependencies": {
     "chai": "^3.5.0",
