@@ -11,6 +11,7 @@ var getModelUrlFromDcatInfo = edinburghcityscopeUtils.getModelUrlFromDcatInfo;
 var getLoopbackModelFromMediaType = edinburghcityscopeUtils.getLoopbackModelFromMediaType;
 var convertCkanAPIResultsToCityScopeJson = edinburghcityscopeUtils.convertCkanAPIResultsToCityScopeJson;
 var getCkanApiResponseFields = edinburghcityscopeUtils.getCkanApiResponseFields;
+var parseCkanApiResponseFields = edinburghcityscopeUtils.parseCkanApiResponseFields;
 
 var testFeatureCollection='{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection='{"type": "FeatureCollection","features": []}';
@@ -27,7 +28,7 @@ var cKanAPIBadResult = '{ "success" : false, "error" : "error text"}';
 var cKanAPIZeroResults = '{ "success" : true, "result" : { "total" : 0 }}';
 var cKanAPIResult = '{ "success" : true, "result" : { "fields" : [{ "type" : "text", "id" : "test" }],"total" : 1, "records" : [ { "test" : "value"}] }}';
 var cKanConvertedResult = [JSON.parse('{ "test" : "value"}')];
-var cKanFields = [JSON.parse('{ "type" : "text", "id" : "test" }')];
+var cKanFields = JSON.parse('[{ "type" : "text", "id" : "test" },{"type" : "text", "id" : "Latitude"},{"type" : "text", "id" : "Longitude"},{"type" : "text", "id" : "BankTypeNa"},{"type" : "text", "id" : "Site_Name"}]');
 
 describe('#featureCollectionToFeatureArray', function(){
 
@@ -173,6 +174,19 @@ describe('#getCkanApiResponseFields',function(){
   it ('returns fields array',function(){
     getCkanApiResponseFields(cKanAPIResult)[0].id.should.equal(cKanFields[0].id);
     getCkanApiResponseFields(cKanAPIResult)[0].type.should.equal(cKanFields[0].type);
+  });
+
+});
+
+describe('#parseCkanApiResponseFields',function(){
+
+  it ('parses fields correctly',function(){
+    result = parseCkanApiResponseFields(cKanFields);
+    result[1].id.should.equal("latitude");
+    result[2].id.should.equal("longitude");
+    result[3].id.should.equal("type");
+    result[4].id.should.equal("name");
+
   });
 
 });

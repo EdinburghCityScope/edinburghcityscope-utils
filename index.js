@@ -234,6 +234,36 @@ getLoopbackModelFromMediaType(mediaType)
    } catch (e) {
      throw e;
    }
- }
+ },
+
+ /**
+ * Parses CKan API response fields into more generic field names
+ * @param cKanApiResponseFields
+ * @return the parsed field array
+ */
+ parseCkanApiResponseFields(cKanApiResponseFields)
+ {
+   var parsedCkanFields = [];
+   cKanApiResponseFields.forEach(function(obj){
+     if (obj.id=="Longitude")
+     {
+       obj.id="longitude";
+     }
+     else if (obj.id=="Latitude")
+     {
+       obj.id="latitude";
+     }
+     else if (obj.id=="BankTypeNa")
+     {
+       obj.id="type";
+     }
+     else if (obj.id=="Site_Name")
+     {
+       obj.id="name";
+     }
+     parsedCkanFields.push(obj);
+   });
+   return parsedCkanFields;
+ },
 
 };
