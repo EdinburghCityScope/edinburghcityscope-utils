@@ -78,25 +78,50 @@ getLoopbackModelFromMediaType(mediaType)
 
    var checkUrl = urllib.parse(url);
 
-   https.get(url, function(response) {
-     if (response.statusCode=='404')
-     {
-       throw new Error('Data not found');
-     }
-       // Continuously update stream with data
-       var body = '';
-       response.on('data', function(d) {
-           body += d;
-       });
-       response.on('end', function() {
-             // Callback body now data is finished reception
-             callback(body);
+   if (url.includes("https"))
+   {
+     https.get(url, function(response) {
+       if (response.statusCode=='404')
+       {
+         throw new Error('Data not found');
+       }
+         // Continuously update stream with data
+         var body = '';
+         response.on('data', function(d) {
+             body += d;
+         });
+         response.on('end', function() {
+               // Callback body now data is finished reception
+               callback(body);
 
-       });
-   }).on('error',function(e){
-     console.log(' on error here');
-     throw e;
-   });
+         });
+     }).on('error',function(e){
+       console.log(' on error here');
+       throw e;
+     });
+   }
+   else {
+     http.get(url, function(response) {
+       if (response.statusCode=='404')
+       {
+         throw new Error('Data not found');
+       }
+         // Continuously update stream with data
+         var body = '';
+         response.on('data', function(d) {
+             body += d;
+         });
+         response.on('end', function() {
+               // Callback body now data is finished reception
+               callback(body);
+
+         });
+     }).on('error',function(e){
+       console.log(' on error here');
+       throw e;
+     });
+   }
+
  },
 
  /**
