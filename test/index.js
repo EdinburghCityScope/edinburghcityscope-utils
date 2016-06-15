@@ -6,9 +6,13 @@ var edinburghcityscopeUtils = require('../index');
 var featureCollectionToFeatureArray = edinburghcityscopeUtils.featureCollectionToFeatureArray;
 var featureArrayToLoopbackJson = edinburghcityscopeUtils.featureArrayToLoopbackJson;
 var getDataFromURL = edinburghcityscopeUtils.getDataFromURL;
-var convertCsvDataToJson = edinburghcityscopeUtils.convertCsvDataToJson;
+var convertCsvDataToGeoJson = edinburghcityscopeUtils.convertCsvDataToGeoJson;
 var getModelUrlFromDcatInfo = edinburghcityscopeUtils.getModelUrlFromDcatInfo;
 var getLoopbackModelFromMediaType = edinburghcityscopeUtils.getLoopbackModelFromMediaType;
+var convertCkanAPIResultsToCityScopeJson = edinburghcityscopeUtils.convertCkanAPIResultsToCityScopeJson;
+var getCkanApiResponseFields = edinburghcityscopeUtils.getCkanApiResponseFields;
+var parseCkanApiResponseFields = edinburghcityscopeUtils.parseCkanApiResponseFields;
+var parseCkanApiResult = edinburghcityscopeUtils.parseCkanApiResult;
 
 var testFeatureCollection='{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection='{"type": "FeatureCollection","features": []}';
@@ -20,6 +24,12 @@ var testInvalidGeoJson='{ "bad": "value"}';
 var testCsv = 'ebid,name,stub,area,type,longitude,latitude,function,url,address1,address2,city,postcode,timestamp\n,"Psychology Building",psychology-building,central,building,-3.1886053385096600,55.9444754372987800,NULL,,"7 George Square",,Edinburgh,"EH8 9JZ","2016-01-19 11:05:17"';
 var testBadCsv = 'this is not a csv';
 var testDcatData= '{"id": "test","title": "test dcat","description": "A test dcat","landingPage" : "","issued": "2016-04-03","modified": "2016-04-03","language": ["en"],"publisher": {"name": "University of Edinburgh","mbox": ""},"spatial": "http://www.geonames.org/maps/google_55.944_-3.188.html","keyword": ["test", "uoe","University of Edinburgh"],"distribution": [{"title": "Test CSV","description": "CSV  test dataset","mediaType": "text/csv","downloadURL": "https://test.com/test.csv","license": "https://test.com/LICENSE"},{"title": "Campus Maps GeoJSON file","description": "GeoJSON representation of the campus maps data","mediaType": "application/vnd.geo+json","downloadURL": "https://test.com/test.geojson","license": "https://test.com/LICENSE"}]}';
+
+var cKanAPIBadResult = '{ "success" : false, "error" : "error text"}';
+var cKanAPIZeroResults = '{ "success" : true, "result" : { "total" : 0 }}';
+var cKanAPIResult = '{ "success" : true, "result" : { "fields" : [{ "type" : "text", "id" : "test" }],"total" : 1, "records" : [ { "test" : "value"}] }}';
+var cKanConvertedResult = [JSON.parse('{ "test" : "value", "Latitude" : "0", "Longitude" : "0", "BankTypeNa" : "site" , "Site_Name" : "name"}')];
+var cKanFields = JSON.parse('[{ "type" : "text", "id" : "test" },{"type" : "text", "id" : "Latitude"},{"type" : "text", "id" : "Longitude"},{"type" : "text", "id" : "BankTypeNa"},{"type" : "text", "id" : "Site_Name"}]');
 
 describe('#featureCollectionToFeatureArray', function(){
 
@@ -73,10 +83,10 @@ describe('#getDataFromURL',function(){
   });
 });
 
-describe('#convertCsvDataToJson',function(){
-  it('converts csv data to json',function(done){
-    convertCsvDataToJson(testCsv,function(callback){
-      expect(callback[0].name).to.equal('Psychology Building');
+describe('#convertCsvDataToGeoJson',function(){
+  it('converts csv data to GeoJson',function(done){
+    result = convertCsvDataToGeoJson(testCsv,function(callback){
+      expect(callback.features[0].properties.name).to.equal('Psychology Building');
       done();
     });
 
@@ -115,4 +125,81 @@ describe('#getLoopbackModelFromMediaType',function(){
   it ('returns Model for a recongised mediaType',function(){
     getLoopbackModelFromMediaType('application/vnd.geo+json').should.equal('GeoJSONFeature');
   });
-})
+
+
+
+
+});
+
+describe('#convertCkanAPIResultsToCityScopeJson',function(){
+
+  it ('throws error when json is invalid',function(){
+    assert.throws(function(){
+      convertCkanAPIResultsToCityScopeJson(testInvalidJson)
+    },Error,'Invalid JSON data');
+  });
+
+  it ('throws error when result has error',function(){
+    assert.throws(function(){
+      convertCkanAPIResultsToCityScopeJson(cKanAPIBadResult)
+    },Error,'Query failed: error text');
+  });
+
+  it ('throws an error when zero query results are returned',function(){
+    assert.throws(function(){
+       convertCkanAPIResultsToCityScopeJson(cKanAPIZeroResults);
+    },Error,'API call returned zero records');
+
+  });
+
+  it ('converts CKAN API call to results array',function(){
+    convertCkanAPIResultsToCityScopeJson(cKanAPIResult)[0].test.should.equal(cKanConvertedResult[0].test);
+  });
+
+});
+
+describe('#getCkanApiResponseFields',function(){
+
+  it ('throws error when json is invalid',function(){
+    assert.throws(function(){
+      getCkanApiResponseFields(testInvalidJson)
+    },Error,'Invalid JSON data');
+  });
+
+  it ('throws error when result has error',function(){
+    assert.throws(function(){
+      getCkanApiResponseFields(cKanAPIBadResult)
+    },Error,'Query failed: error text');
+  });
+
+  it ('returns fields array',function(){
+    getCkanApiResponseFields(cKanAPIResult)[0].id.should.equal(cKanFields[0].id);
+    getCkanApiResponseFields(cKanAPIResult)[0].type.should.equal(cKanFields[0].type);
+  });
+
+});
+
+describe('#parseCkanApiResponseFields',function(){
+
+  it ('parses fields correctly',function(){
+    result = parseCkanApiResponseFields(cKanFields);
+    result[1].id.should.equal("latitude");
+    result[2].id.should.equal("longitude");
+    result[3].id.should.equal("type");
+    result[4].id.should.equal("name");
+
+  });
+
+});
+
+describe('#parseCkanApiResult',function(){
+
+  it ('parses fields correctly',function(){
+    result = parseCkanApiResult(cKanConvertedResult);
+    result[0].latitude.should.equal("0");
+    result[0].longitude.should.equal("0");
+    result[0].type.should.equal("site");
+    result[0].name.should.equal("name");
+  });
+
+});
