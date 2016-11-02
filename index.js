@@ -67,8 +67,9 @@ module.exports = {
      * Get data from a url
      * @param {url} The URL to get the data from
      * @param {callback} The callback which contains the Data
+     * @param {object} An object returned to the callback function to provide contextual information
      */
-    getDataFromURL(url, callback)
+    getDataFromURL(url, callback, c)
     {
         var checkUrl = urllib.parse(url);
 
@@ -84,8 +85,7 @@ module.exports = {
                 });
                 response.on('end', function () {
                     // Callback body now data is finished reception
-                    callback(body);
-
+                    callback(body, c);
                 });
             }).on('error', function (e) {
                 console.log(' on error here');
@@ -104,8 +104,7 @@ module.exports = {
                 });
                 response.on('end', function () {
                     // Callback body now data is finished reception
-                    callback(body);
-
+                    callback(body, c);
                 });
             }).on('error', function (e) {
                 console.log(' on error here');
