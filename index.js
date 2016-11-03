@@ -268,6 +268,74 @@ module.exports = {
         });
 
         return parsedCkanResult;
-    }
+    },
+
+    /**
+     * Fetch area geometry from MapIt and return a GeoJSON feature collection.
+     *
+     * @param {areas} Array of area refs.
+     * @param {callback} Callback to return the GeoJSON feature collection to.
+     */
+    fetchMapItAreas(areas, callback) {
+        var edinburghcityscopeUtils = require('./index');
+        var getDataFromURL = edinburghcityscopeUtils.getDataFromURL;
+        var completed_requests = 0;
+        var features = []
+        var url, geometry, area, feature_collection
+        var hasError = false
+
+        if (!areas || areas.constructor !== Array || !areas.length) {
+            callback(new Error("Invalid list of area IDs supplied"))
+            return
+        }
+
+        for (var i in areas) {
+            url = "https://mapit.mysociety.org/area/" + areas[i]
+
+            getDataFromURL(url, (err, data) => {
+                if (hasError) {
+                    return
+                }
+
+                if (err) {
+                    hasError = true
+                    callback(err)
+                    return;
+                }
+
+                area = JSON.parse(data)
+                console.log("Fetching boundary for " + area.type_name + " " + area.name)
+
+                getDataFromURL(url + ".geojson", (err, data, area) => {
+                    if (hasError) {
+                        return
+                    }
+
+                    if (err) {
+                        hasError = true
+                        callback(err)
+                        return;
+                    }
+
+                    geometry = JSON.parse(data);
+                    features.push({
+                        type: "Feature",
+                        id: area.id,
+                        properties: {name: area.name},
+                        geometry: geometry,
+                    })
+
+                    if (++completed_requests == areas.length) {
+                        feature_collection = {
+                            type: "FeatureCollection",
+                            features: features,
+                        }
+
+                        callback(null, feature_collection)
+                    }
+                }, area);
+            });
+        }
+    },
 
 };

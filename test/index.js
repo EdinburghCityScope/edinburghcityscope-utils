@@ -222,3 +222,44 @@ describe('#parseCkanApiResult', function () {
     });
 
 });
+
+describe('#fetchMapItAreas', function () {
+
+    it('returns feature collection of areas correctly', function (done) {
+        fetchMapItAreas(osAreaIds, function (error, result) {
+            expect(error).to.be.null;
+            expect(result).to.be.a('object');
+            expect(result.type).to.equal("FeatureCollection");
+            expect(result.features.length).to.equal(2)
+            expect([result.features[0].id, result.features[1].id])
+                .to.have.members(osAreaIds);
+            expect([result.features[0].properties.name, result.features[1].properties.name])
+                .to.have.members(osAreaNames);
+            expect(result.features[0].geometry.type).to.equal("Polygon")
+            expect(result.features[0].geometry.coordinates.length).to.equal(1)
+            expect(result.features[0].geometry.coordinates[0].length).to.be.greaterThan(1000)
+            expect(result.features[0].geometry.coordinates[0][10].length).to.equal(2)
+            expect(result.features[1].geometry.type).to.equal("Polygon")
+            expect(result.features[1].geometry.coordinates.length).to.equal(1)
+            expect(result.features[1].geometry.coordinates[0].length).to.be.greaterThan(1000)
+            expect(result.features[1].geometry.coordinates[0][10].length).to.equal(2)
+            done();
+        });
+    });
+
+    it('returns error when bad area ID passed', function (done) {
+        fetchMapItAreas(['X'], function (error, result) {
+            expect(error).to.not.be.null;
+            done();
+        });
+    });
+
+    it('returns error when no area IDs supplied', function (done) {
+        fetchMapItAreas([], function (error, result) {
+            expect(error).to.not.be.null
+            expect(error.message).to.equal('Invalid list of area IDs supplied')
+            done();
+        });
+    });
+
+});
