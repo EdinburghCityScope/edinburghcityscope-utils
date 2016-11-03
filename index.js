@@ -305,8 +305,9 @@ module.exports = {
 
                 area = JSON.parse(data)
                 console.log("Fetching boundary for " + area.type_name + " " + area.name)
+                url = "https://mapit.mysociety.org/area/" + area.id + ".geojson"
 
-                getDataFromURL(url + ".geojson", (err, data, area) => {
+                getDataFromURL(url, (err, data, area) => {
                     if (hasError) {
                         return
                     }

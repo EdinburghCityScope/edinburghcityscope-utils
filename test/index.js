@@ -235,14 +235,23 @@ describe('#fetchMapItAreas', function () {
                 .to.have.members(osAreaIds);
             expect([result.features[0].properties.name, result.features[1].properties.name])
                 .to.have.members(osAreaNames);
-            expect(result.features[0].geometry.type).to.equal("Polygon")
-            expect(result.features[0].geometry.coordinates.length).to.equal(1)
-            expect(result.features[0].geometry.coordinates[0].length).to.be.greaterThan(1000)
-            expect(result.features[0].geometry.coordinates[0][10].length).to.equal(2)
-            expect(result.features[1].geometry.type).to.equal("Polygon")
-            expect(result.features[1].geometry.coordinates.length).to.equal(1)
-            expect(result.features[1].geometry.coordinates[0].length).to.be.greaterThan(1000)
-            expect(result.features[1].geometry.coordinates[0][10].length).to.equal(2)
+
+            if (result.features[0].properties.name == 'Almond') {
+                multi = 0;
+                single = 1;
+            }
+            else {
+                multi = 1;
+                single = 0;
+            }
+            expect(result.features[multi].geometry.type).to.equal("MultiPolygon")
+            expect(result.features[multi].geometry.coordinates.length).to.equal(3)
+            expect(result.features[multi].geometry.coordinates[2][0].length).to.be.greaterThan(1000)
+            expect(result.features[multi].geometry.coordinates[0][0][10].length).to.equal(2)
+            expect(result.features[single].geometry.type).to.equal("Polygon")
+            expect(result.features[single].geometry.coordinates.length).to.equal(1)
+            expect(result.features[single].geometry.coordinates[0].length).to.be.greaterThan(1000)
+            expect(result.features[single].geometry.coordinates[0][10].length).to.equal(2)
             done();
         });
     });
