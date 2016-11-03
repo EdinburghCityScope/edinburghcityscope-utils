@@ -1,6 +1,6 @@
 {
   "name": "edinburghcityscope-utils",
-  "version": "0.3.0",
+  "version": "1.0.0",
   "description": "Node utility package for Edinburgh City Scope",
   "main": "index.js",
   "scripts": {
@@ -11,6 +11,9 @@
     "url": "git+https://github.com/EdinburghCityScope/edinburghcityscope-utils.git"
   },
   "author": "Richard Omand-Good <richard.good@ed.ac.uk>",
+  "contributors": [
+    "Adrian Richardson <Adrian.Richardson@ed.ac.uk>"
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/EdinburghCityScope/edinburghcityscope-utils/issues"
