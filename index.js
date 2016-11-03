@@ -64,20 +64,26 @@ module.exports = {
     },
 
     /**
-     * Get data from a url
+     * Get data from a url.  This is an asynchronous function that will return any error object to the callback.
+     *
      * @param {url} The URL to get the data from
-     * @param {callback} The callback which contains the Data
-     * @param {object} An object returned to the callback function to provide contextual information
+     * @param {callback} The callback function, parameters used are (error, data, c)
+     * @param {c} An object returned to the callback function to provide contextual information
      */
     getDataFromURL(url, callback, c)
     {
-        var checkUrl = urllib.parse(url);
+        try {
+            var urlObject = urllib.parse(url);
+            var protocol = (urlObject.protocol == "https:") ? https : http
 
-        if (url.includes("https")) {
-            https.get(url, function (response) {
-                if (response.statusCode == '404') {
-                    throw new Error('Data not found');
+            protocol.get(url, function (response) {
+                if (response.statusCode !== 200) {
+                    // consume response data to free up memory
+                    response.resume()
+                    callback(new Error('Data not found'));
+                    return
                 }
+
                 // Continuously update stream with data
                 var body = '';
                 response.on('data', function (d) {
@@ -85,33 +91,15 @@ module.exports = {
                 });
                 response.on('end', function () {
                     // Callback body now data is finished reception
-                    callback(body, c);
+                    callback(null, body, c);
                 });
             }).on('error', function (e) {
-                console.log(' on error here');
-                throw e;
+                callback(e);
             });
         }
-        else {
-            http.get(url, function (response) {
-                if (response.statusCode == '404') {
-                    throw new Error('Data not found');
-                }
-                // Continuously update stream with data
-                var body = '';
-                response.on('data', function (d) {
-                    body += d;
-                });
-                response.on('end', function () {
-                    // Callback body now data is finished reception
-                    callback(body, c);
-                });
-            }).on('error', function (e) {
-                console.log(' on error here');
-                throw e;
-            });
+        catch (e) {
+            callback(e)
         }
-
     },
 
     /**

@@ -67,19 +67,27 @@ describe('#featureArrayToLoopbackJson',function(){
 
 describe('#getDataFromURL',function(){
   it('returns data via a valid url',function(done){
-    this.timeout(1000);
-     getDataFromURL('https://raw.githubusercontent.com/EdinburghCityScope/uoe-campus-maps/master/data/campus-maps.csv',function(callback){
-      expect(callback).to.be.a('string');
-      expect(callback).to.contain('Psychology Building');
+   this.timeout(1000);
+    getDataFromURL('https://raw.githubusercontent.com/EdinburghCityScope/uoe-campus-maps/master/data/campus-maps.csv', function (err, data) {
+     expect(err).to.be.null
+     expect(data).to.be.a('string');
+     expect(data).to.contain('Psychology Building');
+     done();
+    });
+  });
+
+  it('returns an error when url is not found', function (done) {
+    getDataFromURL('http://not-found.example.com/', function (err, data) {
+      expect(err).to.not.be.null
       done();
     });
   });
 
-  it('throws an error when url is invalid',function(done){
-    assert.throws(function(){  getCsvDataFromURL('bad:url',function(callback){
+  it('returns an error when url is invalid', function (done) {
+     getDataFromURL('bad:url', function (err, data) {
+        expect(err).to.not.be.null
         done();
-      });});
-      done();
+     });
   });
 });
 
