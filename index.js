@@ -2,7 +2,8 @@ var https = require('https')
 var http = require('http')
 var urllib = require('url')
 var csv2geojson = require("csv2geojson");
-
+var path = require('path');
+var fs = require('fs');
 
 module.exports = {
 
@@ -339,4 +340,18 @@ module.exports = {
         }
     },
 
+    /**
+     * Update the modification date in data.json.
+     *
+     * @param {dir} Directory path for data.json file that needs updating.
+     */
+    updateDataModificationDate(dir) {
+        var file = path.join(dir, 'data.json');
+        var data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        var now = new Date()
+        data.modified = now.toISOString().substring(0, 10)
+
+        console.log("Setting data modification date to " + data.modified)
+        fs.writeFileSync(file, JSON.stringify(data, null, 4), 'utf8');
+    }
 };

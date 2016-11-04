@@ -2,6 +2,8 @@ var should = require('chai').should();
 var expect = require('chai').expect;
 var assert = require('chai').assert;
 
+var path = require('path');
+var fs = require('fs');
 var edinburghcityscopeUtils = require('../index');
 var featureCollectionToFeatureArray = edinburghcityscopeUtils.featureCollectionToFeatureArray;
 var featureArrayToLoopbackJson = edinburghcityscopeUtils.featureArrayToLoopbackJson;
@@ -14,6 +16,7 @@ var getCkanApiResponseFields = edinburghcityscopeUtils.getCkanApiResponseFields;
 var parseCkanApiResponseFields = edinburghcityscopeUtils.parseCkanApiResponseFields;
 var parseCkanApiResult = edinburghcityscopeUtils.parseCkanApiResult;
 var fetchMapItAreas = edinburghcityscopeUtils.fetchMapItAreas;
+var updateDataModificationDate = edinburghcityscopeUtils.updateDataModificationDate;
 
 var testFeatureCollection = '{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection = '{"type": "FeatureCollection","features": []}';
@@ -269,6 +272,23 @@ describe('#fetchMapItAreas', function () {
             expect(error.message).to.equal('Invalid list of area IDs supplied')
             done();
         });
+    });
+
+});
+
+describe('#updateDataModification', function () {
+
+    it('updates modification date in data.json correctly', function () {
+        var file = path.join(__dirname, 'data.json');
+        fs.writeFileSync(file, '{}', 'utf8');
+        updateDataModificationDate(__dirname)
+
+        var now = new Date()
+        var today = now.toISOString().substring(0, 10)
+
+        var data = JSON.parse(fs.readFileSync(file, 'utf8'));
+        expect(data).to.deep.equal({modified: today})
+        fs.unlinkSync(file)
     });
 
 });
