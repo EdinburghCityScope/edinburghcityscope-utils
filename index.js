@@ -51,16 +51,24 @@ module.exports = {
      * Convert a GeoJSON Feature Array into an Loopback json object
      *
      * @param {array} featureArray
-     *
+     * @param {string} model name
      */
-    featureArrayToLoopbackJson(featureArray)
+    featureArrayToLoopbackJson(featureArray, model = "GeoJSONFeature")
     {
-        var jsonEmpty = '{"ids": {"User": 1,"AccessToken": 1,"ACL": 1,"RoleMapping": 1,"Role": 1,"GeoJSONFeature": 2},"models": {"User": {},"AccessToken": {},"ACL": {},"RoleMapping": {},"Role": {},"GeoJSONFeature": {}}}';
-        var loopbackJson = JSON.parse(jsonEmpty);
+        var maxId = 0
+        var loopbackJson = { ids: {}, models: {} };
+        loopbackJson.models[model] = {}
+
         for (var i = 0; i < featureArray.length; i++) {
-            featureArray[i].id = i;
+            if (typeof featureArray[i].id === "undefined") {
+                featureArray[i].id = i;
+            }
+            loopbackJson.models[model][featureArray[i].id.toString()] = JSON.stringify(featureArray[i])
+            maxId = Math.max(maxId, featureArray[i].id);
         }
-        loopbackJson.models.GeoJSONFeature = featureArray;
+
+        loopbackJson.ids[model] = maxId + 1
+
         return loopbackJson;
     },
 

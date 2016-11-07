@@ -67,12 +67,14 @@ describe('#featureCollectionToFeatureArray', function () {
 describe('#featureArrayToLoopbackJson', function () {
 
     it('converts an empty FeatureArray to Empty LoopBackJson', function () {
-        featureArrayToLoopbackJson(emptyArray).models.GeoJSONFeature.should.have.length(0);
+        featureArrayToLoopbackJson(emptyArray).models.GeoJSONFeature.should.equal.empty;
     });
 
     it('converts FeatureArray to LoopbackJson', function () {
-        featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature.should.have.length(1);
-        featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature[0].properties.name.should.equal('Test Name');
+        Object.keys(featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature).should.have.length(1);
+
+        var json = featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature[0];
+        JSON.parse(json).properties.name.should.equal('Test Name');
     });
 
 });
