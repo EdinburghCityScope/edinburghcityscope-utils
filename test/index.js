@@ -17,6 +17,7 @@ var parseCkanApiResponseFields = edinburghcityscopeUtils.parseCkanApiResponseFie
 var parseCkanApiResult = edinburghcityscopeUtils.parseCkanApiResult;
 var fetchMapItAreas = edinburghcityscopeUtils.fetchMapItAreas;
 var updateDataModificationDate = edinburghcityscopeUtils.updateDataModificationDate;
+var fetchGovBoundaries = edinburghcityscopeUtils.fetchGovBoundaries;
 
 var testFeatureCollection = '{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection = '{"type": "FeatureCollection","features": []}';
@@ -293,4 +294,39 @@ describe('#updateDataModification', function () {
         fs.unlinkSync(file)
     });
 
+});
+
+describe('#fetchGovBoundaries', function () {
+
+    it('returns feature collection of areas correctly', function (done) {
+        this.timeout(60000);
+
+        fetchGovBoundaries('dz-2001', (err, features) => {
+            expect(err).to.be.null;
+
+            expect(features.length).to.equal(549)
+
+            // Calls for boundary data are queued, so we should be OK to test a specific list index being a known value.
+            expect(features[0].type).to.equal("Feature")
+            expect(features[0].properties.DZ_CODE).to.equal("S01001790")
+            expect(features[0].properties.collection).to.equal("dz-2001")
+            expect(features[0].id).to.equal("S01001790")
+            expect(features[0].geometry.type).to.equal("Polygon")
+            expect(features[0].geometry.coordinates.length).to.equal(1)
+            expect(features[0].geometry.coordinates[0].length).to.be.greaterThan(10)
+            expect(features[0].geometry.coordinates[0][10].length).to.equal(2)
+
+            expect(features[548].type).to.equal("Feature")
+            expect(features[548].properties.DZ_CODE).to.equal("S01002338")
+            expect(features[548].properties.collection).to.equal("dz-2001")
+            expect(features[548].id).to.equal("S01002338")
+            expect(features[548].geometry.type).to.equal("Polygon")
+            expect(features[548].geometry.coordinates.length).to.equal(1)
+            expect(features[548].geometry.coordinates[0].length).to.be.greaterThan(10)
+            expect(features[548].geometry.coordinates[0][10].length).to.equal(2)
+
+            done();
+        });
+
+    });
 });

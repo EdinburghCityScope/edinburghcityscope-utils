@@ -361,5 +361,75 @@ module.exports = {
 
         console.log("Setting data modification date to " + data.modified)
         fs.writeFileSync(file, JSON.stringify(data, null, 4), 'utf8');
+    },
+
+    /**
+     * Fetch all boundaries in an area collection from the Scottish Governments statistics site.
+     *
+     * @param (collection) The collection id used to build the URI.
+     * @param (callback) Callback to return the GeoJSON to.  First parameter is an error object, or null on success.
+     */
+    fetchGovBoundaries(collection, callback, limit=1000) {
+        const edinburghcityscopeUtils = require('./index');
+        const getDataFromURL = edinburghcityscopeUtils.getDataFromURL;
+        const querystring = require('querystring');
+        const queue = require('queue');
+
+        // We make paged requests to statistics.gov.uk to avoid time-outs, even though we set the page size to be large
+        // enough to retrieve all records in one request.
+        const areaEndpoint = "http://statistics.gov.scot/area_collection.pagedjson?"
+        const qs = {
+            "in_collection": "http://statistics.gov.scot/def/geography/collection/" + collection,
+            "within_area": "http://statistics.gov.scot/id/statistical-geography/S12000036",
+            "page": 1,
+            "per_page": limit,
+        }
+        const boundaryPath = "http://statistics.gov.scot/boundaries/"
+
+        var boundaries = []
+
+        getDataFromURL(areaEndpoint + querystring.stringify(qs), (err, zones, c) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            // We only make one request at a time to statistics.gov.scot to avoid breaking it.
+            var tasks = queue({concurrency: 1});
+
+            zones = JSON.parse(zones)
+            var zone, id, job;
+            var j = 0;
+            for (var i in zones.rows) {
+                tasks.push(function(done) {
+                    zone = zones.rows[j++][0]
+                    id = zone.link.substring(zone.link.lastIndexOf('/') + 1);
+
+                    getDataFromURL(boundaryPath + id + ".json", (err, boundary, ctx) => {
+                        if (err) {
+                            console.log("ERRORING: " + ctx)
+                            callback(err);
+                            return;
+                        }
+
+                        boundary = JSON.parse(boundary)
+                        boundary.id = ctx.id
+                        boundary.properties.collection = ctx.collection
+                        boundaries.push(boundary)
+
+                        console.log(ctx.id)
+                        done()
+                    }, {id: id, collection: c});
+                });
+
+            }
+
+            tasks.start(function(err) {
+                callback(null, boundaries);
+            });
+
+        }, collection);
+
     }
+
 };
