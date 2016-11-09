@@ -89,7 +89,7 @@ module.exports = {
                 if (response.statusCode !== 200) {
                     // consume response data to free up memory
                     response.resume()
-                    callback(new Error('Data not found'));
+                    callback(new Error('Data not found (' + response.statusCode + '): ' + response.statusMessage + " [" + response.req.path + "]"));
                     return
                 }
 
