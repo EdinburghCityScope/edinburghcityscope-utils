@@ -367,7 +367,10 @@ module.exports = {
      * Fetch all boundaries in an area collection from the Scottish Governments statistics site.
      *
      * @param (collection) The collection id used to build the URI.
-     * @param (callback) Callback to return the GeoJSON to.  First parameter is an error object, or null on success.
+     * @param (callback) Callback to return the GeoJSON to.
+     *                   First parameter is an error object, or null on success.
+     *                   Second is the GeoJSON object
+     *                   Third is a list of zones
      */
     fetchGovBoundaries(collection, callback, limit=1000) {
         const edinburghcityscopeUtils = require('./index');
@@ -398,12 +401,15 @@ module.exports = {
             var tasks = queue({concurrency: 1});
 
             zones = JSON.parse(zones)
-            var zone, id, job;
+            var zone_list = [];
+            var zone, id;
             var j = 0;
             for (var i in zones.rows) {
                 tasks.push(function(done) {
                     zone = zones.rows[j++][0]
                     id = zone.link.substring(zone.link.lastIndexOf('/') + 1);
+                    zone_uri = zone.link.substring(zone.link.indexOf('http://'));
+                    zone_list.push(zone_uri)
 
                     getDataFromURL(boundaryPath + id + ".json", (err, boundary, ctx) => {
                         if (err) {
@@ -417,7 +423,6 @@ module.exports = {
                         boundary.properties.collection = ctx.collection
                         boundaries.push(boundary)
 
-                        console.log(ctx.id)
                         done()
                     }, {id: id, collection: c});
                 });
@@ -425,7 +430,12 @@ module.exports = {
             }
 
             tasks.start(function(err) {
-                callback(null, boundaries);
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, boundaries, zone_list);
+                }
             });
 
         }, collection);
