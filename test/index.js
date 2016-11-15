@@ -18,6 +18,7 @@ var parseCkanApiResult = edinburghcityscopeUtils.parseCkanApiResult;
 var fetchMapItAreas = edinburghcityscopeUtils.fetchMapItAreas;
 var updateDataModificationDate = edinburghcityscopeUtils.updateDataModificationDate;
 var fetchGovBoundaries = edinburghcityscopeUtils.fetchGovBoundaries;
+var getScotGovSPARQL = edinburghcityscopeUtils.getScotGovSPARQL;
 
 var testFeatureCollection = '{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection = '{"type": "FeatureCollection","features": []}';
@@ -301,12 +302,15 @@ describe('#fetchGovBoundaries', function () {
     it('returns feature collection of areas correctly', function (done) {
         this.timeout(60000);
 
-        fetchGovBoundaries('dz-2001', (err, features) => {
+        fetchGovBoundaries('dz-2001', (err, features, zones) => {
             expect(err).to.be.null;
 
-            expect(features.length).to.equal(549)
+            expect(features.length).to.equal(3)
+            expect(zones.length).to.equal(3)
 
             // Calls for boundary data are queued, so we should be OK to test a specific list index being a known value.
+            expect(zones[1]).to.equal('http://statistics.gov.scot/id/statistical-geography/S01001791')
+
             expect(features[0].type).to.equal("Feature")
             expect(features[0].properties.DZ_CODE).to.equal("S01001790")
             expect(features[0].properties.collection).to.equal("dz-2001")
@@ -316,17 +320,89 @@ describe('#fetchGovBoundaries', function () {
             expect(features[0].geometry.coordinates[0].length).to.be.greaterThan(10)
             expect(features[0].geometry.coordinates[0][10].length).to.equal(2)
 
-            expect(features[548].type).to.equal("Feature")
-            expect(features[548].properties.DZ_CODE).to.equal("S01002338")
-            expect(features[548].properties.collection).to.equal("dz-2001")
-            expect(features[548].id).to.equal("S01002338")
-            expect(features[548].geometry.type).to.equal("Polygon")
-            expect(features[548].geometry.coordinates.length).to.equal(1)
-            expect(features[548].geometry.coordinates[0].length).to.be.greaterThan(10)
-            expect(features[548].geometry.coordinates[0][10].length).to.equal(2)
+            expect(features[2].type).to.equal("Feature")
+            expect(features[2].properties.DZ_CODE).to.equal("S01001792")
+            expect(features[2].properties.collection).to.equal("dz-2001")
+            expect(features[2].id).to.equal("S01001792")
+            expect(features[2].geometry.type).to.equal("Polygon")
+            expect(features[2].geometry.coordinates.length).to.equal(1)
+            expect(features[2].geometry.coordinates[0].length).to.be.greaterThan(10)
+            expect(features[2].geometry.coordinates[0][10].length).to.equal(2)
+
+            done();
+        }, 3);
+
+    });
+});
+
+describe('#getScotGovSPARQL', function () {
+
+    it('returns nodeified results from the statistics.gov.scot API', function (done) {
+        this.timeout(5000);
+
+        query = `
+            PREFIX qb: <http://purl.org/linked-data/cube#>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX ldim: <http://purl.org/linked-data/sdmx/2009/dimension#>
+            PREFIX dim: <http://statistics.gov.scot/def/dimension/>
+            PREFIX simd: <http://statistics.gov.scot/def/concept/simd-domain/>
+            PREFIX area: <http://statistics.gov.scot/id/statistical-geography/>
+            PREFIX data: <http://statistics.gov.scot/data/>
+            PREFIX prop: <http://statistics.gov.scot/def/measure-properties/>
+            PREFIX year: <http://reference.data.gov.uk/id/year/>
+
+            SELECT ?zone ?rank
+                WHERE {
+                ?s qb:dataSet data:scottish-index-of-multiple-deprivation-2016 ;
+                   qb:measureType prop:rank ;
+                   prop:rank ?rank ;
+                   dim:simdDomain simd:crime ;
+                   ldim:refArea ?z ;
+                   ldim:refPeriod year:2016 .
+                ?z rdfs:label ?zone .
+                FILTER (
+                    ?z = <http://statistics.gov.scot/id/statistical-geography/S01008701>
+                )
+            }`;
+
+        getScotGovSPARQL(query, (err, rows, columns) => {
+            expect(err).to.be.null;
+
+            expect(columns.toString()).to.equal(['zone', 'rank'].toString());
+            expect(rows.length).to.equal(1);
+            expect(rows[0].zone).to.equal('S01008701');
+            expect(rows[0].rank).to.be.a('number');
 
             done();
         });
 
     });
+
+    it('returns error with invalid query', function (done) {
+        this.timeout(5000);
+
+        query = `
+            SELECT ?zone ?rank
+                WHERE {
+                ?s qb:dataSet data:scottish-index-of-multiple-deprivation-2016 ;
+                   qb:measureType prop:rank ;
+                   prop:rank ?rank ;
+                   dim:simdDomain simd:crime ;
+                   ldim:refArea ?z ;
+                   ldim:refPeriod year:2016 .
+                ?z rdfs:label ?zone .
+                FILTER (
+                    ?z = <http://statistics.gov.scot/id/statistical-geography/S01008701>
+                )
+            }`;
+
+        getScotGovSPARQL(query, (err, rows, columns) => {
+            expect(err).not.to.be.null;
+
+            done();
+        });
+
+    });
+
+
 });

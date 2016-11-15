@@ -440,6 +440,115 @@ module.exports = {
 
         }, collection);
 
+    },
+
+    /**
+     * Fetch all boundaries in an area collection from the Scottish Governments statistics site.
+     *
+     * @param (query)    A string for the SPARQL query
+     * @param (callback) Callback to return the result object to.
+     *                   First parameter is an error object, or null on success.
+     *                   Second is the result object as received from the SPARQL API.
+     * @param (limit)    Optionally override the pagination size if row size is too large.  If not provided, the
+     *                   function will chunk the query using limit and offset to try and avoid timeouts on the API.
+     */
+    getScotGovSPARQL(query, callback, limit=null) {
+        const queue = require('queue');
+        const {SparqlClient, SPARQL} = require('sparql-client-2');
+        const SparqlParser = require('sparqljs').Parser;
+        const parser = new SparqlParser();
+        const SparqlGenerator = require('sparqljs').Generator;
+        const generator = new SparqlGenerator();
+        // Add to this list if we encounter other numeric datatypes.
+        const numericDatatypes = [
+            'http://www.w3.org/2001/XMLSchema#integer',
+            'http://www.w3.org/2001/XMLSchema#decimal',
+        ];
+        var row = {}, rows = [], columns = []
+
+        // We update the SPARQL query to include limits, unless a limit has been explicitly set in which case we use that.
+        try {
+            var parsedQuery = parser.parse(query);
+            parsedQuery.offset = 0;
+            parsedQuery.limit = (limit == null) ? 5000 : limit;
+        }
+        catch (err) {
+            callback(err);
+            return;
+        }
+
+        // Change the SPARQL client defaults to match requirements for statistics.gov.scot
+        var client = new SparqlClient('http://statistics.gov.scot/sparql', {
+            defaultParameters: {
+                format: 'json'
+            }
+        });
+
+        // Tasks have to be run sequentially.
+        var tasks = queue({concurrency: 1});
+
+        var fetchChunk = function(done) {
+            var generatedQuery = generator.stringify(parsedQuery).replace(/\\n/g, ' ');
+
+            client.query(generatedQuery)
+                .execute()
+                .then(function (response) {
+                    if (!response) {
+                        throw new Error ("No response received from statistics.gov.uk!");
+                    }
+
+                    if (response.results.bindings.length) {
+                        columns = response.head.vars;
+
+                        for (var i = 0; i < response.results.bindings.length; i++) {
+                            row = {}
+                            response.head.vars.forEach(field => {
+                                if (response.results.bindings[i][field].type != 'literal') {
+                                    throw new Error(`Non-literal returned for variable ?${field}.  Currently only literals can be handled.`);
+                                }
+
+                                row[field] = response.results.bindings[i][field].value;
+
+                                // If explicitly declared as a number, store it as such.
+                                if (response.results.bindings[i][field].datatype && ~numericDatatypes.indexOf(response.results.bindings[i][field].datatype)) {
+                                    row[field] = Number(row[field]);
+                                }
+                            });
+                            rows.push(row)
+                        }
+
+                        // Update the offset on the parsed query and push another task to the queue to continue
+                        // fetching results, unless we received less than the limit.
+                        if (response.results.bindings.length == parsedQuery.limit) {
+                            parsedQuery.offset += parsedQuery.limit;
+                            tasks.push(fetchChunk);
+                        }
+                    }
+
+                    done();
+                })
+                .catch(err => {
+                    console.log(err);
+                    done(err);
+                })
+        };
+
+        // Initialise the task queue with the first job.
+        tasks.push(fetchChunk);
+
+        tasks.on('timeout', function(next, job) {
+            console.log('Fetch from SPARQL timed out!');
+            next();
+        });
+
+        tasks.start(function(err) {
+            if (err) {
+                callback(err);
+            }
+            else {
+                callback(null, rows, columns);
+            }
+        });
     }
 
 };
