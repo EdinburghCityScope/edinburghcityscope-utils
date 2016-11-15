@@ -89,7 +89,7 @@ module.exports = {
                 if (response.statusCode !== 200) {
                     // consume response data to free up memory
                     response.resume()
-                    callback(new Error('Data not found'));
+                    callback(new Error('Data not found (' + response.statusCode + '): ' + response.statusMessage + " [" + response.req.path + "]"));
                     return
                 }
 
@@ -361,5 +361,194 @@ module.exports = {
 
         console.log("Setting data modification date to " + data.modified)
         fs.writeFileSync(file, JSON.stringify(data, null, 4), 'utf8');
+    },
+
+    /**
+     * Fetch all boundaries in an area collection from the Scottish Governments statistics site.
+     *
+     * @param (collection) The collection id used to build the URI.
+     * @param (callback) Callback to return the GeoJSON to.
+     *                   First parameter is an error object, or null on success.
+     *                   Second is the GeoJSON object
+     *                   Third is a list of zones
+     */
+    fetchGovBoundaries(collection, callback, limit=1000) {
+        const edinburghcityscopeUtils = require('./index');
+        const getDataFromURL = edinburghcityscopeUtils.getDataFromURL;
+        const querystring = require('querystring');
+        const queue = require('queue');
+
+        // We make paged requests to statistics.gov.uk to avoid time-outs, even though we set the page size to be large
+        // enough to retrieve all records in one request.
+        const areaEndpoint = "http://statistics.gov.scot/area_collection.pagedjson?"
+        const qs = {
+            "in_collection": "http://statistics.gov.scot/def/geography/collection/" + collection,
+            "within_area": "http://statistics.gov.scot/id/statistical-geography/S12000036",
+            "page": 1,
+            "per_page": limit,
+        }
+        const boundaryPath = "http://statistics.gov.scot/boundaries/"
+
+        var boundaries = []
+
+        getDataFromURL(areaEndpoint + querystring.stringify(qs), (err, zones, c) => {
+            if (err) {
+                callback(err);
+                return;
+            }
+
+            // We only make one request at a time to statistics.gov.scot to avoid breaking it.
+            var tasks = queue({concurrency: 1});
+
+            zones = JSON.parse(zones)
+            var zone_list = [];
+            var zone, id;
+            var j = 0;
+            for (var i in zones.rows) {
+                tasks.push(function(done) {
+                    zone = zones.rows[j++][0]
+                    id = zone.link.substring(zone.link.lastIndexOf('/') + 1);
+                    zone_uri = zone.link.substring(zone.link.indexOf('http://'));
+                    zone_list.push(zone_uri)
+
+                    getDataFromURL(boundaryPath + id + ".json", (err, boundary, ctx) => {
+                        if (err) {
+                            console.log("ERRORING: " + ctx)
+                            callback(err);
+                            return;
+                        }
+
+                        boundary = JSON.parse(boundary)
+                        boundary.id = ctx.id
+                        boundary.properties.collection = ctx.collection
+                        boundaries.push(boundary)
+
+                        done()
+                    }, {id: id, collection: c});
+                });
+
+            }
+
+            tasks.start(function(err) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, boundaries, zone_list);
+                }
+            });
+
+        }, collection);
+
+    },
+
+    /**
+     * Fetch all boundaries in an area collection from the Scottish Governments statistics site.
+     *
+     * @param (query)    A string for the SPARQL query
+     * @param (callback) Callback to return the result object to.
+     *                   First parameter is an error object, or null on success.
+     *                   Second is the result object as received from the SPARQL API.
+     * @param (limit)    Optionally override the pagination size if row size is too large.  If not provided, the
+     *                   function will chunk the query using limit and offset to try and avoid timeouts on the API.
+     */
+    getScotGovSPARQL(query, callback, limit=null) {
+        const queue = require('queue');
+        const {SparqlClient, SPARQL} = require('sparql-client-2');
+        const SparqlParser = require('sparqljs').Parser;
+        const parser = new SparqlParser();
+        const SparqlGenerator = require('sparqljs').Generator;
+        const generator = new SparqlGenerator();
+        // Add to this list if we encounter other numeric datatypes.
+        const numericDatatypes = [
+            'http://www.w3.org/2001/XMLSchema#integer',
+            'http://www.w3.org/2001/XMLSchema#decimal',
+        ];
+        var row = {}, rows = [], columns = []
+
+        // We update the SPARQL query to include limits, unless a limit has been explicitly set in which case we use that.
+        try {
+            var parsedQuery = parser.parse(query);
+            parsedQuery.offset = 0;
+            parsedQuery.limit = (limit == null) ? 5000 : limit;
+        }
+        catch (err) {
+            callback(err);
+            return;
+        }
+
+        // Change the SPARQL client defaults to match requirements for statistics.gov.scot
+        var client = new SparqlClient('http://statistics.gov.scot/sparql', {
+            defaultParameters: {
+                format: 'json'
+            }
+        });
+
+        // Tasks have to be run sequentially.
+        var tasks = queue({concurrency: 1});
+
+        var fetchChunk = function(done) {
+            var generatedQuery = generator.stringify(parsedQuery).replace(/\\n/g, ' ');
+
+            client.query(generatedQuery)
+                .execute()
+                .then(function (response) {
+                    if (!response) {
+                        throw new Error ("No response received from statistics.gov.uk!");
+                    }
+
+                    if (response.results.bindings.length) {
+                        columns = response.head.vars;
+
+                        for (var i = 0; i < response.results.bindings.length; i++) {
+                            row = {}
+                            response.head.vars.forEach(field => {
+                                if (response.results.bindings[i][field].type != 'literal') {
+                                    throw new Error(`Non-literal returned for variable ?${field}.  Currently only literals can be handled.`);
+                                }
+
+                                row[field] = response.results.bindings[i][field].value;
+
+                                // If explicitly declared as a number, store it as such.
+                                if (response.results.bindings[i][field].datatype && ~numericDatatypes.indexOf(response.results.bindings[i][field].datatype)) {
+                                    row[field] = Number(row[field]);
+                                }
+                            });
+                            rows.push(row)
+                        }
+
+                        // Update the offset on the parsed query and push another task to the queue to continue
+                        // fetching results, unless we received less than the limit.
+                        if (response.results.bindings.length == parsedQuery.limit) {
+                            parsedQuery.offset += parsedQuery.limit;
+                            tasks.push(fetchChunk);
+                        }
+                    }
+
+                    done();
+                })
+                .catch(err => {
+                    console.log(err);
+                    done(err);
+                })
+        };
+
+        // Initialise the task queue with the first job.
+        tasks.push(fetchChunk);
+
+        tasks.on('timeout', function(next, job) {
+            console.log('Fetch from SPARQL timed out!');
+            next();
+        });
+
+        tasks.start(function(err) {
+            if (err) {
+                callback(err);
+            }
+            else {
+                callback(null, rows, columns);
+            }
+        });
     }
+
 };

@@ -1,6 +1,6 @@
 {
   "name": "edinburghcityscope-utils",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Node utility package for Edinburgh City Scope",
   "main": "index.js",
   "scripts": {
@@ -21,7 +21,10 @@
   "homepage": "https://github.com/EdinburghCityScope/edinburghcityscope-utils#readme",
   "dependencies": {
     "csv2geojson": "^5.0.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "queue": "^4.0.0",
+    "sparql-client-2": "^0.6.0",
+    "sparqljs": "^1.1.4"
   },
   "devDependencies": {
     "chai": "^3.5.0",
