@@ -52,11 +52,12 @@ module.exports = {
      *
      * @param {array} featureArray
      * @param {string} model name
+     * @param {string} loopBackJson an existing data file to add data into.
      */
-    featureArrayToLoopbackJson(featureArray, model = "GeoJSONFeature")
+    featureArrayToLoopbackJson(featureArray, model = "GeoJSONFeature", loopbackJson = null)
     {
         var maxId = 0
-        var loopbackJson = { ids: {}, models: {} };
+        loopbackJson = loopbackJson || { ids: {}, models: {} };
         loopbackJson.models[model] = {}
 
         for (var i = 0; i < featureArray.length; i++) {
