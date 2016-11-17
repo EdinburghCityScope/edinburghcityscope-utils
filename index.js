@@ -56,13 +56,14 @@ module.exports = {
      */
     featureArrayToLoopbackJson(featureArray, model = "GeoJSONFeature", loopbackJson = null)
     {
-        var maxId = 0
         loopbackJson = loopbackJson || { ids: {}, models: {} };
-        loopbackJson.models[model] = {}
+        loopbackJson.models[model] = loopbackJson.models[model] || {};
+        var maxId = 0;
+        var offset = loopbackJson.ids[model] || 0;
 
         for (var i = 0; i < featureArray.length; i++) {
             if (typeof featureArray[i].id === "undefined") {
-                featureArray[i].id = i;
+                featureArray[i].id = i + offset;
             }
             loopbackJson.models[model][featureArray[i].id.toString()] = JSON.stringify(featureArray[i])
             maxId = Math.max(maxId, featureArray[i].id);
