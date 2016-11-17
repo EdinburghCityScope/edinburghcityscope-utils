@@ -23,6 +23,7 @@ var getScotGovSPARQL = edinburghcityscopeUtils.getScotGovSPARQL;
 var testFeatureCollection = '{"type": "FeatureCollection","features": [{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}]}';
 var testEmptyFeatureCollection = '{"type": "FeatureCollection","features": []}';
 var expectedFeatureArray = [JSON.parse('{"type": "Feature","properties": {"name": "Test Name"},"geometry": {"type": "Point","coordinates": [-3.1952404975891113,55.94966839561511]}}')];
+var extraFeatureArray = [JSON.parse('{"type": "Feature","properties": {"name": "Another Test Name"},"geometry": {"type": "Point","coordinates": [-3.1152404975891113,55.96966839561511]}}')];
 var testBadArray = '{"type": "FeatureCollection","features": [ bad ]}';
 var emptyArray = [];
 var testInvalidJson = '{ bad :, value}';
@@ -69,14 +70,22 @@ describe('#featureCollectionToFeatureArray', function () {
 describe('#featureArrayToLoopbackJson', function () {
 
     it('converts an empty FeatureArray to Empty LoopBackJson', function () {
-        featureArrayToLoopbackJson(emptyArray).models.GeoJSONFeature.should.equal.empty;
+        expect(featureArrayToLoopbackJson(emptyArray).models.GeoJSONFeature).to.be.empty;
     });
 
-    it('converts FeatureArray to LoopbackJson', function () {
-        Object.keys(featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature).should.have.length(1);
 
-        var json = featureArrayToLoopbackJson(expectedFeatureArray).models.GeoJSONFeature[0];
-        JSON.parse(json).properties.name.should.equal('Test Name');
+    it('converts FeatureArray to LoopbackJson', function () {
+        var jsonObject = featureArrayToLoopbackJson(expectedFeatureArray);
+        expect(Object.keys(jsonObject.models.GeoJSONFeature)).to.have.length(1);
+        expect(JSON.parse(jsonObject.models.GeoJSONFeature["0"]).properties.name).to.equal('Test Name');
+    });
+
+    it('can append FeatureArray to LoopbackJson', function () {
+        var jsonObject = featureArrayToLoopbackJson(expectedFeatureArray);
+        jsonObject = featureArrayToLoopbackJson(extraFeatureArray, "GeoJSONFeature", jsonObject);
+        expect(Object.keys(jsonObject.models.GeoJSONFeature)).to.have.length(2);
+        expect(JSON.parse(jsonObject.models.GeoJSONFeature["1"]).properties.name).to.equal('Another Test Name');
+        expect(jsonObject.ids.GeoJSONFeature).to.equal(2);
     });
 
 });
